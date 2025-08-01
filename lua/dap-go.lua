@@ -64,6 +64,8 @@ local function filtered_pick_process()
 end
 
 local function setup_delve_adapter(dap, config)
+  -- TODO: if the path contains spaces like 'docker compose run' then use the first
+  -- as the program, then add the remaining words as args before the default args
   local args = { "dap", "-l", "127.0.0.1:" .. config.delve.port }
   vim.list_extend(args, config.delve.args)
 
@@ -147,6 +149,15 @@ local function setup_go_configuration(dap, configs)
     {
       type = "go",
       name = "Debug test",
+      request = "launch",
+      mode = "test",
+      program = "${file}",
+      buildFlags = configs.delve.build_flags,
+      outputMode = configs.delve.output_mode,
+    },
+    {
+      type = "go",
+      name = "Debug test in docker",
       request = "launch",
       mode = "test",
       program = "${file}",

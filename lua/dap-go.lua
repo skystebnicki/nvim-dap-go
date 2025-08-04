@@ -72,11 +72,12 @@ local function setup_delve_adapter(dap, config)
   local cmd = ""
   local args = {}
   for word in config.delve.path:gmatch("%S+") do
-    if cmd or string.len(cmd) >= 0 then
+    if not cmd or string.len(cmd) == 0 then
+      -- First arg is always the cmmand with option full path
+      cmd = word
+    else
       table.insert(args, word)
     end
-    -- First arg is always the cmmand with option full path
-    cmd = word
   end
 
   -- Now append DAP arguments

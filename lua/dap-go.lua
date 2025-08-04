@@ -64,34 +64,14 @@ local function filtered_pick_process()
 end
 
 local function setup_delve_adapter(dap, config)
-  -- Convert the command string with spaces to args
-  -- In most cases this will just be a single word like 'delve'
-  -- but in more complex setups like when using 'docker run debug'
-  -- this will handle using only 'docker' as the cmd and prepend {'run', 'debug'}
-  -- as arguments prior to any delve commands.
-  local cmd = ""
-  local args = {}
-  for word in config.delve.path:gmatch("%S+") do
-    if not cmd or string.len(cmd) == 0 then
-      -- First arg is always the cmmand with option full path
-      cmd = word
-    else
-      table.insert(args, word)
-    end
-  end
-
-  -- Now append DAP arguments
-  local dap_args = { "dap", "-l", "127.0.0.1:" .. config.delve.port }
-  vim.list_extend(args, dap_args)
-
-  -- Now add configurd args
+  local args = { "dap", "-l", "127.0.0.1:" .. config.delve.port }
   vim.list_extend(args, config.delve.args)
 
   local delve_config = {
     type = "server",
     port = config.delve.port,
     executable = {
-      command = cmd,
+      command = config.delve.path,
       args = args,
       detached = config.delve.detached,
       cwd = config.delve.cwd,
@@ -114,7 +94,15 @@ local function setup_delve_adapter(dap, config)
 
     local listener_addr = host .. ":" .. client_config.port
     delve_config.port = client_config.port
-    delve_config.executable.args = { "dap", "-l", listener_addr }
+
+    -- If the client_config has custom args, then use them, otherwise
+    -- change the listen address to the client config params
+    local client_args = client_config.args
+    if client_args == nil then
+      delve_config.executable.args = { "dap", "-l", listener_addr }
+    else
+      delve_config.executable.args = client_args
+    end
 
     callback(delve_config)
   end

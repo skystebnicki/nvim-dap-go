@@ -64,16 +64,33 @@ local function filtered_pick_process()
 end
 
 local function setup_delve_adapter(dap, config)
-  -- TODO: if the path contains spaces like 'docker compose run' then use the first
-  -- as the program, then add the remaining words as args before the default args
-  local args = { "dap", "-l", "127.0.0.1:" .. config.delve.port }
+  -- Convert the command string with spaces to args
+  -- In most cases this will just be a single word like 'delve'
+  -- but in more complex setups like when using 'docker run debug'
+  -- this will handle using only 'docker' as the cmd and prepend {'run', 'debug'}
+  -- as arguments prior to any delve commands.
+  local cmd = ""
+  local args = {}
+  for word in config.delve.path:gmatch("%S+") do
+    if cmd or string.len(cmd) >= 0 then
+      table.insert(args, word)
+    end
+    -- First arg is always the cmmand with option full path
+    cmd = word
+  end
+
+  -- Now append DAP arguments
+  local dap_args = { "dap", "-l", "127.0.0.1:" .. config.delve.port }
+  vim.list_extend(args, dap_args)
+
+  -- Now add configurd args
   vim.list_extend(args, config.delve.args)
 
   local delve_config = {
     type = "server",
     port = config.delve.port,
     executable = {
-      command = config.delve.path,
+      command = cmd,
       args = args,
       detached = config.delve.detached,
       cwd = config.delve.cwd,

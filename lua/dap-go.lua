@@ -104,6 +104,12 @@ local function setup_delve_adapter(dap, config)
       delve_config.executable.args = client_args
     end
 
+    -- override the command if set in the client config
+    local client_cmd = client_config.path
+    if client_cmd ~= nil then
+      delve_config.executable.command = client_cmd
+    end
+
     callback(delve_config)
   end
 end
